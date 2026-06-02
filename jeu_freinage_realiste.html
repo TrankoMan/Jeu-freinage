@@ -2,133 +2,194 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Jeu du freinage réaliste</title>
+<title>Simulation de freinage</title>
+
 <style>
-body{font-family:Arial,sans-serif;text-align:center;background:#eef2f5}
-#jeu{position:relative;width:1000px;height:180px;margin:20px auto;background:#707070;overflow:hidden;border:3px solid black}
-#voiture{position:absolute;left:0;top:65px;font-size:60px}
-#ligne{position:absolute;right:150px;width:6px;height:100%;background:red}
-#infos{font-size:20px;margin:15px}
-button,select{padding:10px 20px;font-size:18px;margin:5px}
-#resultat{font-size:26px;font-weight:bold;margin-top:20px}
+body{
+    font-family:Arial,sans-serif;
+    text-align:center;
+    background:#eef2f5;
+}
+
+#jeu{
+    position:relative;
+    width:1000px;
+    height:180px;
+    margin:20px auto;
+    background:#707070;
+    overflow:hidden;
+    border:3px solid black;
+}
+
+#voiture{
+    position:absolute;
+    left:0;
+    top:65px;
+    font-size:60px;
+}
+
+#ligne{
+    position:absolute;
+    right:150px;
+    width:6px;
+    height:100%;
+    background:red;
+}
+
+#infos{
+    font-size:20px;
+    margin:15px;
+}
+
+button, select{
+    padding:10px 20px;
+    font-size:18px;
+    margin:5px;
+}
+
+#resultat{
+    font-size:26px;
+    font-weight:bold;
+    margin-top:20px;
+}
 </style>
 </head>
 <body>
-<h1>🚗 Jeu du freinage réaliste</h1>
-<p>Le conducteur a un temps de réaction de 1 seconde avant que le freinage commence.</p>
+
+<h1>🚗 Jeu du freinage</h1>
+
+<p>
+Choisis une vitesse puis essaye de t'arrêter exactement à la ligne rouge.
+</p>
 
 <select id="niveau">
-<option value="30">30 km/h</option>
-<option value="50" selected>50 km/h</option>
-<option value="110">110 km/h</option>
+    <option value="30">30 km/h</option>
+    <option value="50" selected>50 km/h</option>
+    <option value="110">110 km/h</option>
 </select>
 
 <button onclick="demarrer()">Démarrer</button>
 <button onclick="freiner()">Freiner !</button>
 
 <div id="infos">
-Temps : <span id="temps">0.0</span> s |
-Vitesse : <span id="vitesse">50</span> km/h
+    Temps : <span id="temps">0.0</span> s |
+    Vitesse : <span id="vitesse">50</span> km/h
 </div>
 
 <div id="jeu">
-<div id="ligne"></div>
-<div id="voiture">🚗</div>
+    <div id="ligne"></div>
+    <div id="voiture">🚗</div>
 </div>
 
 <div id="resultat"></div>
 
 <script>
-const voiture=document.getElementById("voiture");
-const tempsAff=document.getElementById("temps");
-const vitesseAff=document.getElementById("vitesse");
-const resultat=document.getElementById("resultat");
 
-let position=0,vitesseJeu=0,vitesseActuelle=0;
-let chrono=0,animation,timer;
-let freinage=false,tempsReactionActif=false;
+const voiture = document.getElementById("voiture");
+const tempsAff = document.getElementById("temps");
+const vitesseAff = document.getElementById("vitesse");
+const resultat = document.getElementById("resultat");
 
-const ligneArret=844;
-const tempsReaction=1000;
+let position = 0;
+let vitesseJeu = 0;
+let freinage = false;
+let vitesseActuelle = 0;
+let chrono = 0;
+
+let animation;
+let timer;
+
+const ligneArret = 844;
 
 function distanceFreinage(vKmH){
- return (vKmH*vKmH)/170;
+    // approximation réaliste sur route sèche
+    return (vKmH * vKmH) / 170;
 }
 
 function demarrer(){
- clearInterval(animation);
- clearInterval(timer);
 
- position=0; chrono=0;
- freinage=false; tempsReactionActif=false;
+    clearInterval(animation);
+    clearInterval(timer);
 
- const niveau=parseInt(document.getElementById("niveau").value);
- vitesseActuelle=niveau;
- vitesseAff.textContent=niveau;
- vitesseJeu=niveau/18;
+    position = 0;
+    chrono = 0;
+    freinage = false;
 
- voiture.style.left="0px";
- resultat.textContent="";
+    const niveau = parseInt(
+        document.getElementById("niveau").value
+    );
 
- timer=setInterval(()=>{
-   chrono+=0.1;
-   tempsAff.textContent=chrono.toFixed(1);
- },100);
+    vitesseAff.textContent = niveau;
 
- animation=setInterval(()=>{
+    vitesseActuelle = niveau;
 
-   if(!freinage){
-      position+=vitesseJeu;
-   }else{
+    vitesseJeu = niveau / 18;
 
-      const decel=vitesseActuelle>0 ? (niveauFreinage()/distanceFreinage(vitesseActuelle)) : 0;
-      vitesseJeu-=decel;
+    voiture.style.left = "0px";
 
-      if(vitesseJeu<0) vitesseJeu=0;
+    resultat.textContent = "";
 
-      position+=vitesseJeu;
+    timer = setInterval(()=>{
+        chrono += 0.1;
+        tempsAff.textContent = chrono.toFixed(1);
+    },100);
 
-      if(vitesseJeu<=0.05){
-         finJeu();
-      }
-   }
+    animation = setInterval(()=>{
 
-   voiture.style.left=position+"px";
- },20);
-}
+        if(!freinage){
+            position += vitesseJeu;
+        }
+        else{
 
-function niveauFreinage(){
- return vitesseActuelle/18;
+            const deceleration =
+                vitesseJeu /
+                distanceFreinage(vitesseActuelle);
+
+            vitesseJeu -= deceleration;
+
+            if(vitesseJeu < 0){
+                vitesseJeu = 0;
+            }
+
+            position += vitesseJeu;
+
+            if(vitesseJeu <= 0.05){
+
+                clearInterval(animation);
+                clearInterval(timer);
+
+                const ecart =
+                    Math.abs(position - ligneArret);
+
+                if(ecart < 15){
+                    resultat.textContent =
+                    "🏆 Arrêt parfait !";
+                }
+                else if(ecart < 50){
+                    resultat.textContent =
+                    "✅ Bon arrêt";
+                }
+                else if(position < ligneArret){
+                    resultat.textContent =
+                    "⚠️ Arrêt trop tôt";
+                }
+                else{
+                    resultat.textContent =
+                    "❌ Tu as dépassé la ligne";
+                }
+            }
+        }
+
+        voiture.style.left = position + "px";
+
+    },20);
 }
 
 function freiner(){
- if(tempsReactionActif || freinage) return;
-
- tempsReactionActif=true;
- resultat.textContent="⏳ Temps de réaction du conducteur (1 s)...";
-
- setTimeout(()=>{
-   freinage=true;
-   resultat.textContent="🛑 Freinage en cours";
- },tempsReaction);
+    freinage = true;
 }
 
-function finJeu(){
- clearInterval(animation);
- clearInterval(timer);
-
- const ecart=Math.abs(position-ligneArret);
-
- if(ecart<15){
-   resultat.textContent="🏆 Arrêt parfait !";
- }else if(ecart<50){
-   resultat.textContent="✅ Bon arrêt";
- }else if(position<ligneArret){
-   resultat.textContent="⚠️ Arrêt trop tôt";
- }else{
-   resultat.textContent="❌ Tu as dépassé la ligne";
- }
-}
 </script>
+
 </body>
 </html>
